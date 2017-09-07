@@ -1,0 +1,7 @@
+.tasks {
+    margin-bottom: 20px;
+}
+
+.task--done {
+    color: green;
+}

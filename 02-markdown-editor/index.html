@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Markdown editor</title>
+
+        <link rel="stylesheet" href="css/app.css">
+    </head>
+    <body>
+        <div id="app">
+            <editor></editor>
+        </div>
+
+        <script src="https://unpkg.com/vue"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/0.3.6/marked.min.js"></script>
+        <script>
+            let Preview = {
+                props: [
+                    'text'
+                ],
+                template: `<div class="editor__preview" v-html="markdownText"></div>`,
+                computed: {
+                    markdownText () {
+                        return marked(this.text, { sanitize: true })
+                    }
+                }
+            }
+
+            let Editor = {
+                components: {
+                    'preview': Preview
+                },
+                data () {
+                    return {
+                        text: ''
+                    }
+                },
+                template: `
+                    <div class="editor">
+                        <textarea class="editor__input" contenteditable="true" v-model="text"></textarea>
+                        <preview :text="text"></preview>
+                    </div>
+                `
+            }
+
+            let app = new Vue({
+                el: '#app',
+                components: {
+                    'editor': Editor
+                }
+            })
+        </script>
+    </body>
+</html>

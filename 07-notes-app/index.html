@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Notes</title>
+
+        <link href="https://fonts.googleapis.com/css?family=Zilla+Slab" rel="stylesheet">
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: 'Zilla Slab', serif;
+            }
+
+            .notes__new {
+                display: block;
+                background: #fff;
+                padding: 20px;
+                border: 2px solid #e0e0e0;
+                color: inherit;
+                text-decoration: none;
+                text-align: center;
+                width: 100%;
+                margin-bottom: 2px;
+            }
+
+            .note {
+                display: flex;
+                justify-content: space-between;
+                background: #fff;
+                padding: 20px;
+                border: 2px solid #e0e0e0;
+                border-bottom: 0;
+                color: inherit;
+                text-decoration: none;
+                width: 100%;
+            }
+
+            .note__header {
+                display: flex;
+                flex-direction: row;
+            }
+
+            .note__wrapper:last-child .note {
+                border-bottom: 2px solid #e0e0e0;
+            }
+
+            .note__delete {
+                padding: 20px;
+                text-decoration: none;
+                border: 2px solid #e0e0e0;
+                border-left: 0;
+                color: inherit;
+                text-align: center;
+                min-width: 150px;
+            }
+
+            .editor {
+                width: 100%;
+                font: inherit;
+                border: 0;
+                outline: none;
+                padding: 20px;
+                border: 2px solid #e0e0e0;
+                border-bottom: 0;
+                border-top: 0;
+                resize: vertical;
+                vertical-align: top;
+            }
+
+            .note__wrapper:last-child .editor {
+                border-bottom: 2px solid #e0e0e0;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="app">
+            <notes></notes>
+        </div>
+
+        <script src="https://unpkg.com/vue"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js"></script>
+        <script>
+            let Editor = {
+                props: [
+                    'noteObject'
+                ],
+                data () {
+                    return {
+                        note: this.noteObject
+                    }
+                },
+                template: `
+                    <textarea cols="30" rows="10" class="editor" placeholder="Write a note" v-model="note.body" @input="update"></textarea>
+                `,
+                methods: {
+                    update () {
+                        this.$emit('update', this.note.id)
+                    }
+                }
+            }
+
+            let Note = {
+                props: [
+                    'index',
+                    'noteObject'
+                ],
+                data () {
+                    return {
+                        open: false,
+                        note: this.noteObject
+                    }
+                },
+                computed: {
+                    wordCount () {
+                        if (!this.note.body.trim()) {
+                            return 0
+                        }
+
+                        return this.note.body.trim().split(' ').length
+                    }
+                },
+                components: {
+                    'editor': Editor
+                },
+                template: `
+                    <div class="note__wrapper">
+                        <div class="note__header">
+                            <a href="#" class="note" @click.prevent="open = !open">
+                                <span>{{ _.truncate(note.body, { length: 30 }) || 'Empty note' }}</span>
+                                <span>{{ wordCount }} words</span>
+                            </a>
+                            <a href="#" class="note__delete" v-if="open" @click.prevent="deleteNote">Delete note</a>
+                        </div>
+                        <editor :noteObject="note" v-if="open" v-on:update="saveNote"></editor>
+                    </div>
+                `,
+                methods: {
+                    saveNote () {
+                        let notes = JSON.parse(localStorage.getItem('notes')) || []
+
+                        notes.map((note) => {
+                            if (note.id === this.note.id) {
+                                note.body = this.note.body
+                            }
+                        })
+
+                        localStorage.setItem('notes', JSON.stringify(notes))
+                    },
+                    deleteNote () {
+                        this.$emit('delete', this.note.id)
+                    }
+                }
+            }
+
+            let Notes = {
+                components: {
+                    'note': Note
+                },
+                data () {
+                    return {
+                        notes: JSON.parse(localStorage.getItem('notes')) || []
+                    }
+                },
+                template: `
+                    <div class="notes">
+                        <a href="#" @click.prevent="newNote" class="notes__new">Create a new note</a>
+                        <note v-for="note in notes" :noteObject="note" :key="note.id" v-on:delete="deleteNote"></note>
+                    </div>
+                `,
+                methods: {
+                    newNote () {
+                        this.notes.unshift({ id: Date.now(), body: '' })
+                        localStorage.setItem('notes', JSON.stringify(this.notes))
+                    },
+                    deleteNote (id) {
+                        this.notes = this.notes.filter((note) => {
+                            return note.id !== id
+                        })
+
+                        localStorage.setItem('notes', JSON.stringify(this.notes))
+                    }
+                }
+            }
+
+            let app = new Vue({
+                el: '#app',
+                components: {
+                    'notes': Notes
+                }
+            })
+        </script>
+    </body>
+</html>

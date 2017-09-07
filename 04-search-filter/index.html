@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Search filter</title>
+
+        <link rel="stylesheet" href="css/app.css">
+    </head>
+    <body>
+        <div id="app">
+            <people></people>
+        </div>
+
+        <script src="https://unpkg.com/vue"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.16.2/axios.js"></script>
+        <script>
+            let PeopleSearch = {
+                data () {
+                    return {
+                        query: ''
+                    }
+                },
+                template: `<input type="search" ref="search" v-model="query" @input="changed">`,
+                methods: {
+                    changed () {
+                        this.$emit('input', this.$refs.search.value)
+                    }
+                }
+            }
+
+            let People = {
+                components: {
+                    PeopleSearch
+                },
+                data () {
+                    return {
+                        people: [],
+                        query: ''
+                    }
+                },
+                computed: {
+                    filteredPeople () {
+                        return this.people.filter((row) => {
+                          return Object.keys(row).some((key) => {
+                            return String(row[key]).toLowerCase().indexOf(this.query) > -1
+                          })
+                        })
+                    }
+                },
+                template: `
+                    <div class="people">
+                        <people-search v-model="query"></people-search>
+                        <table>
+                            <thead>
+                                <th>
+                                    <td>ID</td>
+                                </th>
+                                <th>
+                                    <td>Name</td>
+                                </th>
+                                <th>
+                                    <td>Username</td>
+                                </th>
+                                <th>
+                                    <td>Email</td>
+                                </th>
+                            </thead>
+                            <tbody v-if="filteredPeople.length">
+                                <tr v-for="person in filteredPeople">
+                                    <td>{{ person.id }}</td>
+                                    <td>{{ person.name }}</td>
+                                    <td>{{ person.username }}</td>
+                                    <td>{{ person.email }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <p v-if="!filteredPeople.length">No results</p>
+                    </div>
+                `,
+                mounted () {
+                    axios.get('people.json').then((response) => {
+                        this.people = response.data
+                    })
+                }
+            }
+
+            let app = new Vue({
+                el: '#app',
+                components: {
+                    'people': People
+                }
+            })
+        </script>
+    </body>
+</html>

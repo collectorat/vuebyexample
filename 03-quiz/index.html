@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Quiz</title>
+
+        <style>
+            .danger {
+                color: red;
+            }
+
+            .success {
+                color: green;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="app">
+            <quiz></quiz>
+        </div>
+
+        <script src="https://unpkg.com/vue"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.16.2/axios.js"></script>
+        <script>
+            let Results = {
+                props: [
+                    'answeredQuestions'
+                ],
+                template: `
+                    <div class="results">
+                        <h2>Results</h2>
+                        <p>
+                            You got {{ correctAnswerCount }} out of {{ answeredQuestions.length }} question correct
+                        </p>
+                        <div class="results__item" v-for="answered in answeredQuestions">
+                            <h3>{{ answered.question.title }}</h3>
+                            <p>
+                                Your answer: <span :class="{ 'danger' : !answered.answer.correct, 'success': answered.answer.correct }">{{ answered.answer.title }}</span>
+                            </p>
+                            <p v-if="!answered.answer.correct">
+                                Correct answer: {{ getCorrectAnswerFromQuestion(answered.question).title }}
+                            </p>
+                        </div>
+                    </div>
+                `,
+                computed: {
+                    correctAnswerCount () {
+                        return this.answeredQuestions.filter((question) => {
+                            return question.answer.correct
+                        }).length
+                    }
+                },
+                methods: {
+                    getCorrectAnswerFromQuestion (question) {
+                        return question.answers.find((answer) => {
+                            return answer.correct === true
+                        })
+                    }
+                }
+            }
+
+            let Answer = {
+                props: [
+                    'answer'
+                ],
+                template: `
+                    <div class="answer">
+                        <label :for="'answer-' + answer.id">
+                            <input type="radio" :id="'answer-' + answer.id" name="answer" @click="choose(answer)"> {{ answer.title }}
+                        </label>
+                    </div>
+                `,
+                methods: {
+                    choose (answer) {
+                        this.$emit('answer:chosen', answer)
+                    }
+                }
+            }
+
+            let Question = {
+                props: [
+                    'question'
+                ],
+                components: {
+                    'answer': Answer
+                },
+                data () {
+                    return {
+                        showNext: false
+                    }
+                },
+                template: `
+                    <div class="question">
+                        <h3>{{ question.title }}</h3>
+                        <answer
+                            v-for="answer in question.answers"
+                            :answer="answer"
+                            :key="answer.id"
+                            v-on:answer:chosen="checkAnswer"
+                        ></answer>
+
+                        <button v-if="showNext" @click.prevent="nextQuestion">Next</button>
+                    </div>
+                `,
+                methods: {
+                    checkAnswer (answer) {
+                        this.showNext = true
+                        this.$emit('question:answered', this.question, answer)
+                    },
+                    nextQuestion () {
+                        this.showNext = false
+                        this.$emit('question:next')
+                    }
+                }
+            }
+
+            let Quiz = {
+                components: {
+                    'question': Question,
+                    'results': Results
+                },
+                data () {
+                    return {
+                        questions: [],
+                        currentQuestion: null,
+                        answeredQuestions: [],
+                        currentQuestionNumber: 1,
+                        showResults: false
+                    }
+                },
+                template: `
+                    <div class="quiz">
+                        <template v-if="showResults">
+                            <results :answeredQuestions="answeredQuestions"></results>
+                        </template>
+                        <template v-else>
+                            <h4>Question {{ currentQuestionNumber }} of {{ questions.length }}</h4>
+                            <question
+                                v-if="currentQuestion"
+                                :question="currentQuestion"
+                                v-on:question:answered="storeAnswer"
+                                v-on:question:next="setNextQuestion"
+                            ></question>
+                        </template>
+                    </div>
+                `,
+                mounted () {
+                    axios.get('questions.json').then((response) => {
+                        this.questions = response.data
+                        this.currentQuestion = this.questions[0]
+                    })
+                },
+                methods: {
+                    setNextQuestion () {
+                        if (this.allQuestionsAnswered()) {
+                            this.showResults = true
+                            return
+                        }
+
+                        this.currentQuestionNumber++
+                        this.currentQuestion = this.questions[this.currentQuestionNumber - 1]
+                    },
+                    allQuestionsAnswered () {
+                        return this.currentQuestionNumber === this.questions.length;
+                    },
+                    storeAnswer (question, answer) {
+                        this.answeredQuestions.push({
+                            question: question,
+                            answer: answer
+                        })
+                    }
+                }
+            }
+
+            let app = new Vue({
+                el: '#app',
+                components: {
+                    'quiz': Quiz
+                }
+            })
+        </script>
+    </body>
+</html>

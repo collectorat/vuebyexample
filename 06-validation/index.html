@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Validation</title>
+
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+        <style>
+            body {
+                padding-top: 60px;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="app">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-6 offset-md-3">
+                        <register></register>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://unpkg.com/vue"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.16.2/axios.js"></script>
+        <script>
+            let Register = {
+                data () {
+                    return {
+                        errors: [],
+                        form: {
+                            email: null,
+                            password: null,
+                        }
+                    }
+                },
+                template: `
+                    <form action="#" @submit.prevent="submit">
+                        <div class="form-group" :class="{ 'has-danger': errors.email }">
+                            <label for="email" class="form-control-label">Email address</label>
+                            <input type="email" class="form-control" id="email" placeholder="e.g. alex@codecourse.com" v-model="form.email">
+                            <div class="form-control-feedback" v-if="errors.email">
+                                {{ errors.email[0] }}
+                            </div>
+                        </div>
+                        <div class="form-group" :class="{ 'has-danger': errors.password }">
+                            <label for="password" class="form-control-label">Password</label>
+                            <input type="password" class="form-control" id="password" v-model="form.password">
+                            <div class="form-control-feedback" v-if="errors.password">
+                                {{ errors.password[0] }}
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Login</button>
+                        </div>
+                    </form>
+                `,
+                methods: {
+                    submit () {
+                        axios.post('register.php', this.form).then(() => {
+                            // registered successfully
+                        }).catch((error) => {
+                            this.errors = error.response.data.data
+                        })
+                    }
+                }
+            }
+
+            let app = new Vue({
+                el: '#app',
+                components: {
+                    'register': Register
+                }
+            })
+        </script>
+    </body>
+</html>
